@@ -3,13 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use OwenIt\Auditing\Contracts\Auditable;
 
 
-class Exchange_Rate extends Model implements Auditable
+
+class Exchange_Rate extends Model
 {
     use FixJsonDateFormat;
-    use \OwenIt\Auditing\Auditable;
+
     protected $table = 'exchange_rates';
 
     protected $fillable = [

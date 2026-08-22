@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Services\AdminService;
 use Throwable;
 use App\Jobs\RunManualBackup;
+use Carbon\Carbon;
 
 
 
@@ -289,6 +290,30 @@ public function runBackupNow()
             'message' => 'تم جلب سجل التدقيق بنجاح',
             'data' => $this->service->getAuditLogs($validated),
         ]);
+    }
+
+
+    public function deleteAuditsBeforeDate(Request $request)
+    {
+        $request->validate([
+            'date' => ['required', 'date'],
+        ]);
+
+        try {
+            $result = $this->service->deleteAuditsBeforeDate(
+                $request->date
+            );
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء حذف سجلات التدقيق.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
     
 

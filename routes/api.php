@@ -92,6 +92,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::get('/plans/completed/count',[AdminController::class, 'getCompletedTreatmentPlansCount']);
 
     Route::get('/audit-logs', [AdminController::class, 'auditLogs']);
+    Route::delete('/delete-audits', [AdminController::class, 'deleteAuditsBeforeDate']);
 
 
 });
@@ -173,12 +174,12 @@ Route::get('/employees/{userId}/unpaid-months',  [EmployeeSalaryController::clas
 
 
 });
-
+/*
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
    // Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
 
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
-});
+});*/
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
 
     Route::get('/indexs', [InvoiceController::class, 'indexs']);//عرض فواتير المرضى

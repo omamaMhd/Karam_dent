@@ -3,13 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use OwenIt\Auditing\Contracts\Auditable;
 
 
-class DisposalItem extends Model implements Auditable
+class DisposalItem extends Model
 {
     use FixJsonDateFormat;
-    use \OwenIt\Auditing\Auditable;
     protected $table = 'disposal_items';
     protected $fillable = [
         'disposal_id', 
