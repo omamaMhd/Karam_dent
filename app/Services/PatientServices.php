@@ -180,7 +180,7 @@ public function getAvailableSlotsForDays($doctorId)
 
         $exists = Appointment::where('doctor_id', $doctor->id)
             ->where('appointment_date', $appointmentDateTime)
-            ->whereIn('status', ['scheduled', 'confirmed', 'completed'])
+            ->whereIn('status', [ 'confirmed', 'completed'])
             ->exists();
 
         if ($exists) {

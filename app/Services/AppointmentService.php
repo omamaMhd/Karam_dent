@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 class AppointmentService
 {
@@ -257,6 +258,7 @@ class AppointmentService
 
     public function bookSecretaryAppointment(array $data): Appointment
     {
+        return DB::transaction(function () use ($data) {
         $doctor = Doctor::where('id', $data['doctor_id'])
             ->where('is_active', true)
             ->firstOrFail();
@@ -265,12 +267,42 @@ class AppointmentService
         $appointmentDateTime = Carbon::parse($data['date'] . ' ' . $data['time']);
 
         $this->ensureSlotAvailable($doctor, $appointmentDateTime);
+                // يوجد موعد مؤكد أو مكتمل لنفس الدكتور ونفس الوقت؟
+        $alreadyTaken = Appointment::where('doctor_id', $doctor->id)
+            ->where('appointment_date', $appointmentDateTime)
+            ->whereIn('status', ['confirmed', 'completed'])
+            ->exists();
 
-        return $this->createAppointment($patient->id, $doctor->id, $appointmentDateTime, 'confirmed');
-    }
+        if ($alreadyTaken) {
+            throw new \Exception(
+                'لا يمكن حجز هذا الموعد لأن الوقت محجوز مسبقاً'
+            );
+        }
+                // إنشاء موعد السكرتارية كمؤكد مباشرة
+        $appointment = $this->createAppointment(
+            $patient->id,
+            $doctor->id,
+            $appointmentDateTime,
+            'confirmed'
+        );
+
+        // إلغاء جميع الحجوزات المجدولة الأخرى
+        // لنفس الدكتور ونفس الوقت
+        Appointment::where('doctor_id', $doctor->id)
+            ->where('appointment_date', $appointmentDateTime)
+            ->where('id', '!=', $appointment->id)
+            ->where('status', 'scheduled')
+            ->update([
+                'status' => 'cancelled'
+            ]);
+
+        return $appointment;
+    });
+}
 
     public function confirmAppointmentBySecretary(int $appointmentId): Appointment
     {
+        return DB::transaction(function () use ($appointmentId) {
         $appointment = Appointment::with([
             'patient.user',
             'doctor.user'
@@ -292,9 +324,21 @@ class AppointmentService
 
         $appointment->status = 'confirmed';
         $appointment->save();
-
-        return $appointment;
-    }
+        // إلغاء جميع الحجوزات المجدولة الأخرى
+        // لنفس الطبيب ونفس الوقت
+        Appointment::where('doctor_id', $appointment->doctor_id)
+            ->where('appointment_date', $appointment->appointment_date)
+            ->where('id', '!=', $appointment->id)
+            ->where('status', 'scheduled')
+            ->update([
+                'status' => 'cancelled'
+            ]);
+        return $appointment->fresh([
+            'patient.user',
+            'doctor.user'
+        ]);
+    });
+}
 
     //private function ensureSlotAvailable(Doctor $doctor, Carbon $appointmentDateTime)
     public function cancelAppointmentBySecretary(int $appointmentId): Appointment

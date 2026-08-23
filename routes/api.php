@@ -44,9 +44,9 @@ Route::post('/logout', [AuthController::class, 'logout']);
 // );
  });// تسجيل الخروج
 
-// //Route::middleware('auth:sanctum')->get('/auth/check-token',[AuthController::class, 'checkToken']
+ 
+Route::middleware('auth:sanctum')->get('/auth/check-token',[AuthController::class, 'checkToken']);
 
-// );
 
 //اشعاااارات 
    

@@ -17,7 +17,7 @@ class AppointmentController extends Controller
 	public function bookBySecretary(Request $request)
 	{
 		$data = $request->validate([
-			'patient_name' => 'required|string|min:2|max:255',
+			'patient_name' => 'nullable|string|min:2|max:255',
 			'phone_number' => 'required|string|min:10',
 			'doctor_id' => 'required|exists:doctors,id',
 			'date' => 'required|date',
