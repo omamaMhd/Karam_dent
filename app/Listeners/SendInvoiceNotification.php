@@ -5,11 +5,15 @@ namespace App\Listeners;
 use App\Events\InvoiceCreated;
 use App\Jobs\SendNotificationJob;
 use App\Models\User;
-
+use Illuminate\Support\Facades\Log;
 class SendInvoiceNotification
 {
     public function handle(InvoiceCreated $event): void
     {
+         Log::info('🔥 InvoiceApproved Listener FIRED', [
+        'invoice_id' => $event->invoice->id,
+    ]);
+
         $admins = User::role('admin')
             ->pluck('id')
             ->toArray();

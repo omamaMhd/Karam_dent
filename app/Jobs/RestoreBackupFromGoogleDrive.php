@@ -316,7 +316,7 @@ class RestoreBackupFromGoogleDrive implements ShouldQueue
     /**
      * الحد الأقصى للاستعادة: دقيقة واحدة.
      */
-    public $timeout = 60;
+    public $timeout = 600;
 
     /**
      * لا نعيد المحاولة تلقائياً؛ لأن الاستعادة عملية حساسة.
@@ -526,17 +526,31 @@ class RestoreBackupFromGoogleDrive implements ShouldQueue
                  * 5) استيراد SQL إلى MySQL المحلي.
                  */
                 $mysqlConfig = config('database.connections.mysql');
-                $mysqlBinDirectory = rtrim(
-                    (string) data_get($mysqlConfig, 'dump.dump_binary_path'),
-                    '/\\'
-                );
-                $mysqlBinary = $mysqlBinDirectory . '/mysql.exe';
 
-                if (! File::exists($mysqlBinary)) {
-                    throw new RuntimeException(
-                        'لم يتم العثور على mysql.exe في: ' . $mysqlBinary
-                    );
-                }
+                // $mysqlBinDirectory = rtrim(
+                //     (string) data_get($mysqlConfig, 'dump.dump_binary_path'),
+                //     '/\\'
+                // );
+
+                // $mysqlBinary = $mysqlBinDirectory . '/mysql.exe';
+
+                // if (! File::exists($mysqlBinary)) {
+                //     throw new RuntimeException(
+                //         'لم يتم العثور على mysql.exe في: ' . $mysqlBinary
+                //     );
+                // }
+                $mysqlBinDirectory = rtrim(
+    (string) data_get($mysqlConfig, 'dump.dump_binary_path'),
+    '/\\'
+);
+
+$mysqlBinary = $mysqlBinDirectory . '/mysql';
+
+if (! File::exists($mysqlBinary)) {
+    throw new RuntimeException(
+        'لم يتم العثور على mysql في: ' . $mysqlBinary
+    );
+}
 
                 $command = [
                     $mysqlBinary,
@@ -553,7 +567,7 @@ class RestoreBackupFromGoogleDrive implements ShouldQueue
                 $command[] = (string) data_get($mysqlConfig, 'database');
 
                 $importProcess = new Process($command, base_path());
-                $importProcess->setTimeout(50);
+                $importProcess->setTimeout(800);
 
                 $sqlInputStream = fopen($sqlPath, 'rb');
                 if ($sqlInputStream === false) {

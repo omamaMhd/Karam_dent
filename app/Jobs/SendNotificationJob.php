@@ -226,9 +226,10 @@ use App\Models\User;
 use App\Services\FirebaseNotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Log;
  
-class SendNotificationJob implements ShouldQueue
+class SendNotificationJob implements ShouldQueue,ShouldBeUnique
 {
     use Queueable;
  
@@ -251,6 +252,13 @@ class SendNotificationJob implements ShouldQueue
         $this->type = $type;
         $this->data = $data;
     }
+    
+    public function uniqueId(): string
+{
+    return $this->type . ':' . ($this->data['invoice_id'] ?? md5(
+        $this->title . $this->body . json_encode($this->userIds)
+    ));
+}
  
     public function handle(FirebaseNotificationService $firebase)
     {

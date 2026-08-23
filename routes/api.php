@@ -72,6 +72,8 @@ Route::get('/specializations', [SpecializationController::class,'index']);//عر
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::post('/create-employee', [AdminController::class, 'createEmployee']);
    Route::post('/admin/backup/run', [AdminController::class, 'runBackupNow']);//نسخ احتياطي
+   Route::get('/admin/backups', [AdminController::class, 'listBackups']);//عرض النسخ 
+   Route::post('/admin/backups/restore', [AdminController::class, 'restoreBackup']);//استعادة نسخة 
     Route::get('/audit/{id}', [InventoryTransactionController::class, 'approved']);//موافقة المدير على الجرد + تنفيذ التسوية
     Route::get('/pending_approvals', [InventoryTransactionController::class, 'getPendingAuditsReport']);// عرض الجردات في انتظار الموافقة
     Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResult']);// عرض تفاصيل جرد محدد

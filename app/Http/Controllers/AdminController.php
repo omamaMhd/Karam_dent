@@ -8,6 +8,9 @@ use App\Services\AdminService;
 use Throwable;
 use App\Jobs\RunManualBackup;
 use Carbon\Carbon;
+use App\Jobs\RestoreBackupFromGoogleDrive;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 
 
@@ -262,7 +265,68 @@ public function runBackupNow()
         'message' => 'تم طلب النسخة الاحتياطية. ستبدأ الآن في الخلفية، وستشمل قاعدة البيانات وملفات المشروع.',
     ], 202);
 }
+/**
+ * يعرض ملفات ZIP الموجودة على قرص Google Drive، بما في ذلك الملفات
+ * الموجودة داخل مجلدات فرعية مثل KaramDent/.
+ */
 
+public function listBackups()
+{
+    $google = Storage::disk('google');
+
+    $backups = collect($google->allFiles(''))
+        ->filter(fn (string $path) => Str::endsWith(Str::lower($path), '.zip'))
+        ->map(function (string $path) use ($google) {
+            return [
+                // هذه القيمة الكاملة هي التي تُستخدم في restoreBackup.
+                'path' => $path,
+                'name' => basename($path),
+                'size' => $google->size($path),
+                'last_modified' => $google->lastModified($path),
+            ];
+        })
+        ->sortByDesc('last_modified')
+        ->values();
+
+    return response()->json([
+        'status' => 'success',
+        'backups' => $backups,
+    ]);
+}
+/**
+ * يطلب استعادة نسخة محددة من Google Drive.
+ * لا يقبل الطلب إلا إذا أرسل الأدمن نص التأكيد المطلوب.
+ */
+public function restoreBackup(Request $request)
+{
+    $data = $request->validate([
+        'backup_path' => ['required', 'string'],
+        'confirmation' => ['required', 'string', 'in:RESTORE_KARAM_DENT_DATA'],
+    ]);
+
+    $google = Storage::disk('google');
+
+    $allowedBackup = collect($google->allFiles(''))
+        ->contains(
+            fn (string $path) => $path === $data['backup_path']
+                && Str::endsWith(Str::lower($path), '.zip')
+        );
+
+    if (! $allowedBackup) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'النسخة المطلوبة غير موجودة على Google Drive.',
+        ], 404);
+    }
+
+    RestoreBackupFromGoogleDrive::dispatch($data['backup_path']);
+
+    return response()->json([
+        'status' => 'queued',
+        'message' => 'تم قبول طلب الاستعادة. ستتم استعادة قاعدة البيانات والتقارير الطبية من النسخة المحددة.',
+    ], 202);
+}
+/////////////////////////////////////////
 
     public function getCompletedTreatmentPlansCount()
     {
