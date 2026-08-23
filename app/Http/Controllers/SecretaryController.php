@@ -29,7 +29,7 @@ class SecretaryController extends Controller
     public function createPatient(Request $request)
     {
         $data = $request->validate([
-            'name' => 'required|string',
+            'name' => 'nullable|string',
             'phone_number' => 'required|string|unique:users,phone_number',
         ]);
 
