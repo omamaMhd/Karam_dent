@@ -74,9 +74,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
    Route::post('/admin/backup/run', [AdminController::class, 'runBackupNow']);//نسخ احتياطي
    Route::get('/admin/backups', [AdminController::class, 'listBackups']);//عرض النسخ 
    Route::post('/admin/backups/restore', [AdminController::class, 'restoreBackup']);//استعادة نسخة 
-    Route::get('/audit/{id}', [InventoryTransactionController::class, 'approved']);//موافقة المدير على الجرد + تنفيذ التسوية
+    Route::post('/audit/{id}/pp', [InventoryTransactionController::class, 'approved']);//موافقة المدير على الجرد + تنفيذ التسوية
     Route::get('/pending_approvals', [InventoryTransactionController::class, 'getPendingAuditsReport']);// عرض الجردات في انتظار الموافقة
-    Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResult']);// عرض تفاصيل جرد محدد
+    Route::get('/showss/{id}/pp', [InventoryTransactionController::class, 'getAuditResult']);// عرض تفاصيل جرد محدد
     Route::get('getDisposedItemsHistory', [InventoryTransactionController::class, 'getDisposedItemsHistory']);//عرض جميع المواد التي تم اتلافها للادمن
     Route::post('/invoices/{id}/approve', [InvoiceController::class, 'approve']);//اعتماد الفاتورة
 
