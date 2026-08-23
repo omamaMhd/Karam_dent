@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('audit_items', function (Blueprint $table) {
         $table->id();
-        $table->foreignId('inventory_audits_id')->constrained()->cascadeOnDelete();
+        $table->foreignId('inventory_audit_id')->constrained()->cascadeOnDelete();
         $table->foreignId('item_id')->constrained()->cascadeOnDelete();
         $table->string('batch_number')->nullable();
         $table->integer('quantity_expected')->nullable();

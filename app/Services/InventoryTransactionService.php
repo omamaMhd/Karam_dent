@@ -425,7 +425,7 @@ public function approveAudit(int $auditId)
         }
 
         // 1. تجميع كل السجلات الخاصة بهذا الجرد للمادة الواحدة
-        $itemsToAdjust = AuditItem::where('audit_id', $auditId)
+        $itemsToAdjust = AuditItem::where('inventory_audit_id', $auditId)
             ->select('item_id', DB::raw('SUM(quantity_actual) as total_actual'))
             ->groupBy('item_id')
             ->get();

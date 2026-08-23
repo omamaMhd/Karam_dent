@@ -527,30 +527,34 @@ class RestoreBackupFromGoogleDrive implements ShouldQueue
                  */
                 $mysqlConfig = config('database.connections.mysql');
 
-                // $mysqlBinDirectory = rtrim(
-                //     (string) data_get($mysqlConfig, 'dump.dump_binary_path'),
-                //     '/\\'
-                // );
-
-                // $mysqlBinary = $mysqlBinDirectory . '/mysql.exe';
-
-                // if (! File::exists($mysqlBinary)) {
-                //     throw new RuntimeException(
-                //         'لم يتم العثور على mysql.exe في: ' . $mysqlBinary
-                //     );
-                // }
                 $mysqlBinDirectory = rtrim(
-    (string) data_get($mysqlConfig, 'dump.dump_binary_path'),
-    '/\\'
-);
+                    (string) data_get($mysqlConfig, 'dump.dump_binary_path'),
+                    '/\\'
+                );
 
-$mysqlBinary = $mysqlBinDirectory . '/mysql';
+                $mysqlBinary = $mysqlBinDirectory . '/mysql.exe';
 
-if (! File::exists($mysqlBinary)) {
-    throw new RuntimeException(
-        'لم يتم العثور على mysql في: ' . $mysqlBinary
-    );
-}
+                if (! File::exists($mysqlBinary)) {
+                    throw new RuntimeException(
+                        'لم يتم العثور على mysql.exe في: ' . $mysqlBinary
+                    );
+                }
+//                 $mysqlBinDirectory = rtrim(
+//     (string) data_get($mysqlConfig, 'dump.dump_binary_path'),
+//     '/\\'
+// );
+
+// //$mysqlBinary = $mysqlBinDirectory . '/mysql';
+
+// $mysqlBinary = PHP_OS_FAMILY === 'Windows'
+//     ? $mysqlBinDirectory . '/mysql.exe'
+//     : $mysqlBinDirectory . '/mysql';
+
+// if (! File::exists($mysqlBinary)) {
+//     throw new RuntimeException(
+//         'لم يتم العثور على mysql في: ' . $mysqlBinary
+//     );
+// }
 
                 $command = [
                     $mysqlBinary,

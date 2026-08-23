@@ -229,7 +229,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Log;
  
-class SendNotificationJob implements ShouldQueue,ShouldBeUnique
+class SendNotificationJob implements ShouldQueue ,ShouldBeUnique
 {
     use Queueable;
  

@@ -11,7 +11,7 @@ class AuditItem extends Model implements Auditable
     use \OwenIt\Auditing\Auditable;
     protected $table = 'audit_items';
      protected $fillable = [
-        'audit_id',
+        'inventory_audit_id',
          'item_id', 
          'batch_number', 
          'quantity_expected',

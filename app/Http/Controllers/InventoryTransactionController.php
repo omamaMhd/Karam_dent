@@ -231,7 +231,7 @@ public function addItem(Request $request, int $auditId)
     
     // تسجيل الإدخال كـ "سجل خام" (سجل عدّ)
     $entry = AuditItem::create([
-        'audit_id' => $auditId,
+        'inventory_audit_id' => $auditId,
         'item_id' => $validated['item_id'],
         'quantity_actual' => $validated['quantity_actual'],
     ]);
@@ -246,7 +246,7 @@ public function addItem(Request $request, int $auditId)
 public function getAuditResult($auditId)
 {
     // 1. جلب البيانات المجمعة لكل مادة، مع تجميع أسباب النقص المسجّلة لها
-    $results = AuditItem::where('audit_id', $auditId)
+    $results = AuditItem::where('inventory_audit_id', $auditId)
         ->select('item_id', DB::raw('SUM(quantity_actual) as total_actual'))
         ->groupBy('item_id')
         ->get();
@@ -262,7 +262,7 @@ public function getAuditResult($auditId)
         $grandTotalVariance += $variance;
 
        // جلب سبب النقص المسجّل لهذه المادة ضمن هذا الجرد
-        $reason = AuditItem::where('audit_id', $auditId)
+        $reason = AuditItem::where('inventory_audit_id', $auditId)
             ->where('item_id', $row->item_id)
             ->whereNotNull('variance_reason')
             ->value('variance_reason');
@@ -342,7 +342,7 @@ public function updateVarianceReason(Request $request, $auditId, $itemId)
     $request->validate(['reason' => 'required|string']);
     
     // تحديث كل السجلات التي تنتمي لهذه المادة في هذا الجرد بالتحديد
-    $updatedCount = AuditItem::where('audit_id', $auditId)
+    $updatedCount = AuditItem::where('inventory_audit_id', $auditId)
         ->where('item_id', $itemId)
         ->update([
             'variance_reason' => $request->reason,
@@ -418,7 +418,7 @@ public function updateVarianceReason(Request $request, $auditId, $itemId)
     }
 
     // 1. احسبي الإجماليات أولاً
-    $auditItems = AuditItem::where('audit_id', $auditId)->get();
+    $auditItems = AuditItem::where('inventory_audit_id', $auditId)->get();
     
     $totalItems = $auditItems->groupBy('item_id')->count();
     
@@ -514,7 +514,7 @@ public function getPendingAuditsReport()
     $report = $pendingAudits->map(function ($audit) {
         
         // 1. جلب البيانات مع جلب عمود السبب (reason)
-        $results = AuditItem::where('audit_id', $audit->id)
+        $results = AuditItem::where('inventory_audit_id', $audit->id)
             ->select('item_id', 'variance_reason', DB::raw('SUM(quantity_actual) as total_actual'))
             ->groupBy('item_id', 'variance_reason') // تجميع حسب المادة والسبب
             ->get();
@@ -539,7 +539,7 @@ public function getPendingAuditsReport()
         }
 
         return [
-            'audit_id' => $audit->id,
+            'inventory_audit_id' => $audit->id,
             'audit_number' => $audit->audit_number,
             'items' => $itemsReport,
             'summary' => [
