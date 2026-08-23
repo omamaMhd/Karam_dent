@@ -85,7 +85,6 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::get('/deleted-users', [AdminController::class, 'deletedUsers']);
     Route::post('/EditDoctors/{doctorId}',[AdminController::class, 'updateDoctorInfo']);
 
-    Route::get('/categories', [AdminController::class, 'getTreatmentCategories']);
     Route::post('/createCate', [AdminController::class, 'createTreatmentCategory']);
     Route::post('/updateCate/{id}', [AdminController::class, 'updateTreatmentCategory']);
     Route::delete('/delCate/{id}', [AdminController::class, 'deleteTreatmentCategory']);
@@ -98,6 +97,10 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
 
 
 });
+Route::middleware(['auth:sanctum', 'role:admin|doctor'])->group(function(){
+    Route::get('/categories', [AdminController::class, 'getTreatmentCategories']);
+});
+
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
     Route::post('/addAvailableTime', [DoctorController::class, 'addAvailableTime']);
