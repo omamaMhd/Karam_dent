@@ -123,57 +123,6 @@ class AppointmentService
         return $query->firstOrFail();
     }
 
-   /*
-    public function getAvailableSlotsForDoctor(Doctor $doctor, int $daysToCheck = 10): array
-    {
-        $result = [];
-
-        for ($i = 0; $i < $daysToCheck; $i++) {
-            $date = Carbon::today()->addDays($i);
-            $day = $this->normalizeDay($date);
-
-            $schedules = Doctor_Schedules::where('doctor_id', $doctor->id)
-                ->where('day', $day)
-                ->get();
-
-            $slots = [];
-
-            foreach ($schedules as $schedule) {
-                $start = Carbon::parse($schedule->start_time);
-                $end = Carbon::parse($schedule->end_time);
-
-                while ($start < $end) {
-                    $slots[] = $start->format('H:i');
-                    $start->addMinutes(30);
-                }
-            }
-
-            if ($i === 0) {
-                $now = Carbon::now();
-                $slots = array_filter($slots, function ($slot) use ($now, $date) {
-                    $slotDateTime = Carbon::parse($date->toDateString() . ' ' . $slot);
-                    return $slotDateTime->gt($now);
-                });
-            }
-
-            $booked = Appointment::where('doctor_id', $doctor->id)
-                ->whereDate('appointment_date', $date)
-                ->whereIn('status', ['scheduled', 'confirmed', 'completed'])
-                ->pluck('appointment_date')
-                ->map(fn($t) => Carbon::parse($t)->format('H:i'))
-                ->toArray();
-
-            $available = array_values(array_diff($slots, $booked));
-
-            $result[] = [
-                'date' => $date->toDateString(),
-                'day' => $day,
-                'slots' => $available,
-            ];
-        }
-
-        return $result;
-    }*/
 
    public function getAvailableSlotsForDoctor(Doctor $doctor, int $daysToCheck = 10): array
     {
@@ -340,7 +289,6 @@ class AppointmentService
     });
 }
 
-    //private function ensureSlotAvailable(Doctor $doctor, Carbon $appointmentDateTime)
     public function cancelAppointmentBySecretary(int $appointmentId): Appointment
     {
         $appointment = Appointment::findOrFail($appointmentId);
@@ -400,7 +348,7 @@ class AppointmentService
         // 4. التحقق من أن الموعد غير محجوز مسبقاً
         $exists = Appointment::where('doctor_id', $doctor->id)
             ->where('appointment_date', $appointmentDateTime)
-            ->whereIn('status', ['scheduled', 'confirmed', 'completed'])
+            ->whereIn('status', ['confirmed', 'completed'])
             ->exists();
 
         if ($exists) {
@@ -468,16 +416,12 @@ class AppointmentService
         $user = Auth::user();
         $doctorId = null;
 
-        // 1. تحقق صريح: إذا كان المستخدم الحالي يحمل رول "doctor"
         if ($user->hasRole('doctor')) {           
             
-            // الطبيب يستعرض مواعيده هو فقط تلقائياً
             $doctorId = $user->doctor->id;
 
-        // 2. إذا كان المستخدم يحمل رول "secretary" (سكرتارية)
         } elseif ($user->hasRole('secretary')) {
             
-            // السكرتارية مجبرة على إرسال الـ doctor_id
             if (!$paramDoctorId) {
                 throw ValidationException::withMessages([
                     'doctor_id' => ['يجب تحديد معرف الطبيب المطلوب (doctor_id).']
@@ -486,7 +430,6 @@ class AppointmentService
             
             $doctorId = $paramDoctorId;
 
-        // 3. حماية إضافية في حال تم الدخول من رول آخر بالخطأ مستقبلاً
         } else {
             throw ValidationException::withMessages([
                 'error' => ['ليس لديك الصلاحية للوصول إلى هذه البيانات.']
@@ -501,14 +444,6 @@ class AppointmentService
             ->sortBy(fn($schedule) => array_search($schedule->day, $dayOrder))
             ->values();
 }
-
-// ==================================================
-    // ============ الدوال الجديدة - رول المريض ============
-    // ==================================================
-
-    /**
-     * الموعد القادم للمريض (أقرب موعد ضمن الحالات النشطة scheduled/confirmed)
-     */
     public function getNextAppointmentForPatient(int $patientId): ?array
     {
         $query = Appointment::with(['doctor.user'])
@@ -522,11 +457,6 @@ class AppointmentService
         return $appointment ? $this->formatPatientAppointment($appointment) : null;
     }
 
-    /**
-     * قائمة مواعيد المريض حسب الحالة (confirmed / scheduled / cancelled / completed)
-     * الحالات النشطة (scheduled, confirmed) تُفلتَر بفترة سماح زمنية،
-     * أما الحالات الأرشيفية (cancelled, completed) فتُعرض كاملة بدون قيد وقت
-     */
     public function getPatientAppointmentsByStatus(int $patientId, string $status): array
     {
         $query = Appointment::with(['doctor.user'])
@@ -542,9 +472,6 @@ class AppointmentService
             ->all();
     }
 
-    /**
-     * يطبّق فلتر النافذة الزمنية (فترة سماح) فقط إذا كانت الحالة من الحالات النشطة
-     */
     private function applyActiveWindowFilter($query, string $status)
     {
         if (in_array($status, self::ACTIVE_STATUSES, true)) {

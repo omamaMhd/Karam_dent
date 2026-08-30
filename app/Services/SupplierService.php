@@ -33,8 +33,7 @@ public function createBulkItems(array $items)
                 'unit' => $item['unit'],
                 'minimum_stock' => $item['minimum_stock'],
                 'max_stock' => $item['max_stock'],
-                //'reorder_point' => $item['reorder_point'] ?? 0,
-                //'current_stock' => 0,
+
                 'is_active' => true,
             ]);
         }
@@ -43,46 +42,7 @@ public function createBulkItems(array $items)
     });
 }
 
-//  public function createSupplierWithItems(array $data)
-//     {
-//         $supplier = Supplier::create([
-//             'name' => $data['name'],
-//             'phone' => $data['phone'] ?? null,
-//             'notes' => $data['notes'] ?? null,
-//         ]);
 
-//         foreach ($data['items'] as $row) {
-
-//             // ✔ مادة موجودة
-//             if (!empty($row['item_id'])) {
-
-//                 $item = Item::findOrFail($row['item_id']);
-
-//                 SupplierItem::create([
-//                     'supplier_id' => $supplier->id,
-//                     'item_id' => $item->id,
-//                     'name' => $item->name,
-//                     'unit' => $item->unit,
-//                     'code' => $item->code,
-//                 ]);
-
-//             } else {
-//                 // 🆕 مادة جديدة
-
-//                 SupplierItem::create([
-//                     'supplier_id' => $supplier->id,
-//                     'item_id' => null,
-//                     'name' => $row['name'],
-//                     'unit' => $row['unit'] ?? 'unit',
-//                     'code' => $row['code'] ?? null,
-//                 ]);
-//             }
-//         }
-
-//         return $supplier->load('supplierItems');
-//     }
-    
-// في ملف SupplierService.php
 public function createSupplierWithItems(array $data)
 {
     return DB::transaction(function () use ($data) {
@@ -178,12 +138,6 @@ public function removeItemFromSupplier(int $supplierId, int $itemId)
                        ->delete();
 }
 
-// public function updateItemDetails(int $supplierId, int $itemId, array $data)
-// {
-//     return SupplierItem::where('supplier_id', $supplierId)
-//                        ->where('item_id', $itemId)
-//                        ->update($data);
-// }
 
 public function update(int $supplierId, array $data)
 {

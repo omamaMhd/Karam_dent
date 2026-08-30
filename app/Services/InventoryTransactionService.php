@@ -22,33 +22,25 @@ use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
 
 
-
 class InventoryTransactionService
 {
-    
-   // protected $messaging;
-     
+ 
       public function __construct(
         private ExchangeRateService $exchangeService,
         
     ) {}
 
-//شراء مواد من المورد
 public function purchaseBulk(array $data)
 {
     return DB::transaction(function () use ($data) {
 
-        // 🔹 جلب المورد
         $supplier = Supplier::findOrFail($data['supplier_id']);
 
-        // 🔹 سعر الصرف الحالي
         $rateModel = $this->exchangeService->getCurrentUsdToSypRate();
         $exchangeRate = $rateModel->rate;
 
-        // 🔹 إنشاء رقم فاتورة فريد
         $invoiceNumber = 'INV-' . date('Ymd') . '-' . strtoupper(uniqid());
 
-        // 🔹 إنشاء الفاتورة
         $invoice = Invoice::create([
             'invoice_number' => $invoiceNumber,
             'type' => 'supplier',
@@ -60,28 +52,20 @@ public function purchaseBulk(array $data)
             'issued_at' => $data['issued_at'] ?? now(),
         ]);
 
-        // ✅ تحقق
         if ($invoice->type !== 'supplier') {
             return [
                 'success' => false,
                 'message' => 'Invoice type must be supplier'
             ];
         }
-
         $total = 0;
 
-        // 🔥 المرور على المواد
         foreach ($data['items'] as $row) {
 
-            // 🔹 التأكد أن المادة تخص المورد
             $supplierItem = SupplierItem::where('supplier_id', $supplier->id)
                 ->where('id', $row['supplier_item_id'])
                 ->firstOrFail();
 
-            /**
-             * إذا المادة غير مثبتة بالنظام
-             * يتم إنشاء مادة جديدة تلقائياً
-             */
             if (!$supplierItem->item_id) {
 
                 $item = Item::firstOrCreate(
@@ -94,26 +78,20 @@ public function purchaseBulk(array $data)
                         'is_active' => true,
                     ]
                 );
-
-                // ربط المادة بالمورد
                 $supplierItem->update([
                     'item_id' => $item->id
                 ]);
 
             } else {
 
-                // المادة موجودة مسبقاً
                 $item = $supplierItem->item;
             }
-// 🔥 التحقق من الحد الأعلى (Max Stock)
     $maxStock = $item->max_stock;
 
-    // إذا كان الحد الأعلى معرفاً (أكبر من 0)
     if ($maxStock > 0) {
         $requestedQuantity = $row['quantity'];
         $currentStock = $item->current_stock;
         
-        // التحقق: هل الكمية الحالية + الكمية المطلوبة > الحد الأعلى؟
         if (($currentStock + $requestedQuantity) > $maxStock) {
             throw new \Exception(
                 "خطأ: لا يمكن إتمام العملية. كمية المادة '{$item->name}' ستتجاوز الحد الأعلى المسموح به (" . 
@@ -121,22 +99,14 @@ public function purchaseBulk(array $data)
             );
         }
     }
-            /**
-             * 🔥 إدارة المخزون
-             * إذا نفس المادة + نفس التشغيلة موجودين
-             * يزيد الكمية
-             * وإلا ينشئ دفعة جديدة
-             */
             $inventory = Inventory::where('item_id', $item->id)
                 ->where('batch_number', $row['batch_number'] ?? null)
                 ->first();
 
             if ($inventory) {
 
-                // زيادة كمية الدفعة الموجودة
                 $inventory->increment('quantity', $row['quantity']);
 
-                // تحديث بيانات الدفعة
                 $inventory->update([
                     'expiry_date' => $row['expiry_date'] ?? null,
                     'storage_location' => $row['storage_location'] ?? null,
@@ -147,7 +117,6 @@ public function purchaseBulk(array $data)
 
             } else {
 
-                // إنشاء دفعة جديدة
                 $inventory = Inventory::create([
                     'item_id' => $item->id,
                     'batch_number' => $row['batch_number'] ?? null,
@@ -167,61 +136,39 @@ public function purchaseBulk(array $data)
                 ]);
             }
 
-            // 🔥 تحديث المخزون العام للمادة
             $item->increment('current_stock', $row['quantity']);
 
-            // 🔹 حساب السعر الفرعي
             $subtotal = $row['quantity'] * $row['purchase_price'];
 
             $total += $subtotal;
 
-            /**
-             * 🔹 إنشاء عنصر فاتورة
-             */
             Invoice_Item::create([
                 'invoice_id' => $invoice->id,
                 'item_id' => $item->id,
-
                 'description' => $item->name,
-
                 'quantity' => $row['quantity'],
-
                 'unit_price' => $row['purchase_price'],
-
                 'subtotal' => $subtotal,
             ]);
 
-            /**
-             * 🔹 تسجيل حركة المخزون
-             */
             InventoryTransaction::create([
                 'item_id' => $item->id,
-
                 'inventory_id' => $inventory->id,
-
                 'supplier_id' => $supplier->id,
-
                 'batch_number' => $inventory->batch_number,
-
                 'quantity' => $row['quantity'],
-
                 'purchase_price' => $row['purchase_price'],
-
                 'type' => 'in',
-
                 'issued_at' => now(),
-
                 'notes' => 'شراء من المورد #' . $supplier->id,
             ]);
         }
 
-        // 🔹 تحديث إجمالي الفاتورة
         $invoice->update([
             'total_amount_USD' => $total,
             'total_amount_SYP' => $total * $exchangeRate,
         ]);
 
-        // 🔥 إطلاق الحدث
         event(new InvoiceCreated($invoice));
 
         return $invoice->load(
@@ -230,7 +177,6 @@ public function purchaseBulk(array $data)
         );
     });
 }
-
 
 //إنشاء طلب مواد من الدكتور
     public function create(int $doctorId,array $data) {
@@ -255,19 +201,7 @@ $body  = 'تم إنشاء طلب مواد جديد في النظام.';
                     'quantity_requested' =>
                         $item['quantity'],
                 ]); }
-                
-//             $message = CloudMessage::new()
-//  ->withToken($fcmToken)
-//  ->withNotification(
-//  Notification::create(
-//  $title,
-//  $body
-// )
-// ) ->withData([
-//  'type' => 'test',
-// 'timestamp' => now()->toDateTimeString(),
-//  ]);
-//  $response = $this->messaging->send($message);
+
 
             event(new \App\Events\MaterialRequestCreated($request));
 
@@ -280,43 +214,32 @@ public function approveMaterialRequest(int $requestId): MaterialRequest
         // استخدام معاملات قاعدة البيانات لضمان تنفيذ كل العمليات أو تراجعها بالكامل في حال حدوث خطأ
         return DB::transaction(function () use ($requestId) {
 
-            // جلب الطلب مع العلاقات الضرورية
             $request = MaterialRequest::with([
                 'items.item',
                 'doctor'
             ])->findOrFail($requestId);
 
-            // منع المعالجة المكررة للطلب
             if ($request->status !== 'pending') {
                 throw new \Exception('تمت معالجة هذا الطلب مسبقاً.');
             }
-
-            // ==========================================
             // 1. المرحلة الأولى: التحقق من توفر كامل الكميات لجميع المواد
-            // ==========================================
             foreach ($request->items as $requestItem) {
                 $requestedQty = (int) $requestItem->quantity_requested;
 
-                // حساب مجموع الكميات المتوفرة في كافة الدفعات النشطة لهذه المادة
                 $available = (int) Inventory::where('item_id', $requestItem->item_id)
                     ->where('quantity', '>', 0)
                     ->where('is_active', true)
                     ->sum('quantity');
 
-                // إذا كانت الكمية المتوفرة في المخزن أقل من المطلوبة لأي مادة، نلغي العملية بالكامل
                 if ($available < $requestedQty) {
                     throw new \Exception("المخزون غير كافٍ للمادة ({$requestItem->item->name}). المتوفر: {$available}، والمطلوب: {$requestedQty}. تم إلغاء عملية الصرف.");
                 }
             }
 
-            // ==========================================
-            // 2. المرحلة الثانية: السحب الفعلي بحسب نظام FIFO
-            // ==========================================
             foreach ($request->items as $requestItem) {
                 $requestedQty = (int) $requestItem->quantity_requested;
                 $remaining = $requestedQty;
 
-                // جلب دفعات المخزون مرتبة بحسب تاريخ الصلاحية الأقرب ثم تاريخ الاستلام الأقدم (FIFO)
                 $batches = Inventory::where('item_id', $requestItem->item_id)
                     ->where('quantity', '>', 0)
                     ->where('is_active', true)
@@ -334,47 +257,25 @@ public function approveMaterialRequest(int $requestId): MaterialRequest
                         continue;
                     }
 
-                    // تحديد الكمية المراد سحبها من هذه الدفعة
                     $takeQty = min($remaining, $batch->quantity);
                     $before = $batch->quantity;
                     $newQty = $before - $takeQty;
 
-                    // تحديث دفعة المخزن
                     $batch->update([
                         'quantity' => $newQty,
                         'is_active' => $newQty > 0
                     ]);
 
-                    // تحديث المخزون العام للمادة (الاختصار المباشر)
                     Item::where('id', $requestItem->item_id)
                         ->decrement('current_stock', $takeQty);
-//////////////////////////
-// بعد سطر الـ decrement
-//Item::where('id', $requestItem->item_id)->decrement('current_stock', $takeQty);
 
-// فحص يدوي لنقص المخزون بعد الصرف
 $updatedItem = Item::find($requestItem->item_id);
  $title = 'صرف مواد ';
 $body  = 'تم خفض المادة عن الحد الأدنى';
 if ($updatedItem->current_stock <= $updatedItem->minimum_stock) {
 
-//       $message = CloudMessage::new()
-//  ->withToken($fcmToken)
-//  ->withNotification(
-//  Notification::create(
-//  $title,
-//  $body
-// )
-// ) ->withData([
-//  'type' => 'test',
-// 'timestamp' => now()->toDateTimeString(),
-//  ]);
-//  $response = $this->messaging->send($message);
-
      event(new \App\Events\LowStockDetected($updatedItem));
 }
-/////////////////////////////////////////
-                    // تسجيل حركة المخزن بدقة في جدول المعاملات
                     InventoryTransaction::create([
                         'movement_type' => 'withdrawal',
                         'item_id' => $requestItem->item_id,
@@ -395,22 +296,14 @@ if ($updatedItem->current_stock <= $updatedItem->minimum_stock) {
 
                     $remaining -= $takeQty;
                 }
-
-                // تحديث حالة مادة الطلب والكمية المصروفة فعلياً في جدول الربط مع الحفظ الإجباري
-                //$requestItem->status = 'approved';
                 $requestItem->quantity_withdrawn = $requestedQty;
                 $requestItem->save(); 
             }
-
-            // ==========================================
-            // 3. تحديث حالة الطلب الرئيسي النهائي
-            // ==========================================
             $request->update([
                 'status' => 'approved',
                 'withdrawn_date' => now(),
             ]);
 
-            // عمل refresh لإعادة جلب البيانات المحدثة طازجة من الداتابيز قبل إرجاعها
             return $request->refresh()->load(['items.item']);
         });
     }
@@ -423,48 +316,27 @@ public function approveAudit(int $auditId)
         if ($audit->status !== 'waiting_approval') {
             throw new \Exception('الجرد غير قابل للموافقة');
         }
-
-        // 1. تجميع كل السجلات الخاصة بهذا الجرد للمادة الواحدة
         $itemsToAdjust = AuditItem::where('inventory_audit_id', $auditId)
             ->select('item_id', DB::raw('SUM(quantity_actual) as total_actual'))
             ->groupBy('item_id')
             ->get();
 
-        // foreach ($itemsToAdjust as $record) {
-        //     $itemId = $record->item_id;
-        //     $totalActual = $record->total_actual; // المجموع الحقيقي لكل السجلات
-
-        //     // 2. حساب المتوقع من المخزن
-        //     $expectedQuantity = Inventory::where('item_id', $itemId)
-        //         ->where('is_active', true)
-        //         ->sum('quantity');
-
-        //     $totalVariance = $totalActual - $expectedQuantity;
-
-        //     // 3. التسوية
-        //     $this->adjustInventoryForItem($itemId, $totalVariance, $audit->id);
-        // }
         foreach ($itemsToAdjust as $record) {
     $itemId = $record->item_id;
-    // التحويل إلى رقم لضمان دقة الحسابات
     $totalActual = (float) $record->total_actual; 
 
-    // 2. حساب المتوقع من المخزن
     $expectedQuantity = (float) Inventory::where('item_id', $itemId)
         ->where('is_active', true)
         ->sum('quantity');
 
     $totalVariance = $totalActual - $expectedQuantity;
 
-    // سجلّي ما يحدث في الـ Log لتعرفي أين المشكلة (مهم جداً)
     Log::info("Item $itemId: Actual=$totalActual, Expected=$expectedQuantity, Variance=$totalVariance");
 
-    // 3. التسوية
     if ($totalVariance != 0) {
         $this->adjustInventoryForItem($itemId, $totalVariance, $audit->id);
     }
 }
-
         $audit->update([
             'status' => 'approved',
             'approved_by' => Auth::id(),
@@ -488,7 +360,6 @@ public function adjustInventoryForItem(int $itemId, $variance, int $auditId)
         ->orderBy('received_date', 'ASC')
         ->get();
 
-    // 1. حالة الزيادة (نضيف للدفعة الأولى أو ننشئ دفعة)
     if ($variance > 0) {
         $batch = $batches->first();
         if (!$batch) return; 
@@ -508,7 +379,6 @@ public function adjustInventoryForItem(int $itemId, $variance, int $auditId)
         ]);
 
     } 
-    // 2. حالة النقص (خصم تدريجي من الدفعات FIFO)
     else {
         $remaining = abs($variance);
 
@@ -517,7 +387,6 @@ public function adjustInventoryForItem(int $itemId, $variance, int $auditId)
 
             $take = min($remaining, $batch->quantity);
             
-            // تحديث الدفعة والمخزون العام
             $batch->decrement('quantity', $take);
             Item::where('id', $itemId)->decrement('current_stock', $take);
 
@@ -525,7 +394,6 @@ public function adjustInventoryForItem(int $itemId, $variance, int $auditId)
                 $batch->update(['is_active' => false]);
             }
 
-            // التصحيح هنا: نسجل حركة لكل دفعة بما تم خصمه منها ($take) وليس إجمالي النقص
             InventoryTransaction::create([
                 'type' => 'out',
                 'item_id' => $itemId,
@@ -548,52 +416,30 @@ public function executeDisposal(int $disposalId)
 
         $disposal = Disposal::with('items')->findOrFail($disposalId);
 
-        // تعديل التحقق من الحالة لتناسب جدولك (استخدام 'completed' بدلاً من 'pending' أو العكس)
         if ($disposal->status === 'completed') {
             throw new \Exception('تمت معالجة أو تنفيذ هذا الإتلاف مسبقاً.');
         }
 
-        // foreach ($disposal->items as $item) {
-        //     $inventory = Inventory::lockForUpdate()->findOrFail($item->inventory_id);
-
-        //     if ($item->quantity > $inventory->quantity) {
-        //         throw new \Exception("فشل: الكمية المطلوبة لإتلاف المادة ({$item->item_id}) غير متوفرة.");
-        //     }
-
-        //     $newQty = $inventory->quantity - $item->quantity;
-
-        //     // 1. تحديث الدفعة
-        //     $inventory->update([
-        //         'quantity' => $newQty,
-        //         'is_active' => $newQty > 0 // إذا أصبحت 0 تصبح غير فعالة
-        //     ]);
-
-        //     // 2. تحديث المخزون العام (تأكدي من وجود عمود current_stock في جدول items)
-        //     Item::where('id', $item->item_id)->decrement('current_stock', $item->quantity);
 
         foreach ($disposal->items as $item) {
     $inventory = Inventory::lockForUpdate()->findOrFail($item->inventory_id);
 
-    // 🛡️ حماية إضافية: إذا كان التلاعب بالداتا جعل الكمية المتوفرة أقل من المراد إتلافه
     if ($item->quantity > $inventory->quantity) {
         throw new \Exception("خطأ في البيانات: المادة ({$item->item_id}) لم تعد متوفرة بالكمية المطلوبة في المخزن.");
     }
 
     $newQty = $inventory->quantity - $item->quantity;
 
-    // 1. تحديث الدفعة (Inventory)
     $inventory->update([
         'quantity' => $newQty,
         'is_active' => $newQty > 0
     ]);
 
-    // 2. تحديث المادة (Item) - مع التأكد أنها لا تنزل عن الصفر
-    // استخدام decrement هو جيد، لكن لنضمن سلامة الداتا، استخدمي شرطاً في التحديث:
     Item::where('id', $item->item_id)
         ->where('current_stock', '>=', $item->quantity) // شرط أمان إضافي
         ->decrement('current_stock', $item->quantity);
-            // 3. توثيق الحركة في الجدول الذي أرسلتِهِ
-            InventoryTransaction::create([
+
+        InventoryTransaction::create([
                 'item_id'          => $item->item_id,
                 'inventory_id'     => $inventory->id, // الربط الجديد
                 'type'             => 'out',
@@ -603,11 +449,9 @@ public function executeDisposal(int $disposalId)
             ]);
         }
 
-        // 4. تحديث حالة طلب الإتلاف في جدول disposals
         $disposal->update([
             'status'      => 'completed', // الحالة النهائية
             'approved_by' => (string)Auth::id(), // تخزين الـ ID كـ string حسب جدولك
-            // 'approved_at' إذا لم يكن موجوداً في جدولك، احذفي هذا السطر
         ]);
 
         return $disposal->fresh()->load('items.item');
@@ -619,10 +463,8 @@ public function executeImmediateManualDisposal(array $data, int $userId)
 {
     return DB::transaction(function () use ($data, $userId) {
         
-        // 1. حساب إجمالي الكمية المطلوبة للإتلاف
         $totalQty = collect($data['items'])->sum('quantity');
 
-        // 2. إنشاء مستند الإتلاف (مطابق لجدول disposals)
         $disposal = Disposal::create([
             'disposal_number' => 'MAN-DISP-' . date('YmdHis'),
             'disposal_date'   => now(),
@@ -635,23 +477,19 @@ public function executeImmediateManualDisposal(array $data, int $userId)
         ]);
 
         foreach ($data['items'] as $item) {
-            // قفل السجل في الداتابيز
             $inventory = Inventory::lockForUpdate()->findOrFail($item['inventory_id']);
 
             if ($item['quantity'] > $inventory->quantity) {
                 throw new \Exception("الكمية غير متوفرة في الدفعة: " . $inventory->batch_number);
             }
 
-            // تحديث الكمية في الدفعة
             $inventory->update([
                 'quantity' => $inventory->quantity - $item['quantity'],
                 'is_active' => ($inventory->quantity - $item['quantity']) > 0
             ]);
 
-            // تحديث المخزون العام للمادة
             Item::where('id', $item['item_id'])->decrement('current_stock', $item['quantity']);
 
-            // تسجيل الحركة في الجدول العام للحركات
             InventoryTransaction::create([
                 'item_id'          => $item['item_id'],
                 'inventory_id'     => $inventory->id, // قمنا بإضافته سابقاً
@@ -661,7 +499,6 @@ public function executeImmediateManualDisposal(array $data, int $userId)
                 'transaction_date' => now(),
             ]);
 
-            // تسجيل تفاصيل المادة في جدول الإتلاف (مطابق لجدول disposal_items)
             DisposalItem::create([
                 'disposal_id'    => $disposal->id,
                 'item_id'        => $item['item_id'],
@@ -676,7 +513,7 @@ public function executeImmediateManualDisposal(array $data, int $userId)
         return $disposal->fresh()->load('items.item');
     });
 }
-// عرض طلبات الأطباء المعلقة لأمين المستودع
+
 public function getPendingDoctorRequests()
 {
     return MaterialRequest::with(['doctor.user', 'doctor.specialization', 'items.item'])
@@ -700,7 +537,6 @@ public function getPendingDoctorRequests()
         });
 }
 
-// عرض تفاصيل طلب محدد مع فحص FIFO
 public function getDoctorRequestDetails(int $id): array
 {
     $req = MaterialRequest::with(['doctor.user', 'doctor.specialization', 'items.item'])

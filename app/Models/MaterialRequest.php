@@ -18,11 +18,7 @@ class MaterialRequest extends Model implements Auditable
         'notes',
         'requested_date', 
         'withdrawn_date', 
-       // 'fulfilled_date', 
-       // 'total_items', 
         'requested_by',
-       // 'approved_by',
-        //'fulfilled_by'
     ];
 
     // 👨‍⚕️ الدكتور صاحب الطلب
@@ -36,7 +32,7 @@ class MaterialRequest extends Model implements Auditable
     {
         return $this->hasMany(MaterialRequestItem::class);
     }
-    ///////////////////////////////////////
+    //
      public function movements()
       { return $this->hasMany(InventoryTransaction::class, 'reference_id')->where('reference_type', 'Requisition'); }
 }

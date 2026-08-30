@@ -202,64 +202,6 @@ class DoctorFinanceService
         ];
     }
 
-  /*  public function getCenterDoctorsSummary(): array
-    {
-        $totalDueUsd = (float) Doctor_Earning::sum('amount_usd');
-        $totalPaidUsd = (float) Doctor_Payment::sum('amount_usd');
-
-        $totalDueSyp = (float) Doctor_Earning::sum('amount_syp');
-        $totalPaidSyp = (float) Doctor_Payment::sum('amount_syp');
-
-        // earnings القديمة التي لا تحتوي amount_syp
-        $missingDueSyp = Doctor_Earning::whereNull('amount_syp')
-            ->with('exchangeRate')
-            ->get();
-
-        foreach ($missingDueSyp as $earning) {
-            $rate = $earning->exchangeRate?->rate;
-
-            if ($rate) {
-                $totalDueSyp += round(
-                    (float) $earning->amount_usd * (float) $rate,
-                    2
-                );
-            }
-        }
-
-        // payments القديمة التي لا تحتوي amount_syp
-        $missingPaidSyp = Doctor_Payment::whereNull('amount_syp')
-            ->with('exchangeRate')
-            ->get();
-
-        foreach ($missingPaidSyp as $payment) {
-            $rate = $payment->exchangeRate?->rate;
-
-            if ($rate) {
-                $totalPaidSyp += round(
-                    (float) $payment->amount_usd * (float) $rate,
-                    2
-                );
-            }
-        }
-
-        $rateRecord = $this->exchangeRateService->getCurrentUsdToSypRate();
-        $currentRate = (float) $rateRecord->rate;
-
-        $remainingUsd = max($totalDueUsd - $totalPaidUsd, 0);
-
-        return [
-            'totals' => [
-                'due_usd'       => $totalDueUsd,
-                'due_syp'       => $totalDueSyp,
-
-                'paid_usd'      => $totalPaidUsd,
-                'paid_syp'      => $totalPaidSyp,
-
-                'remaining_usd' => $remainingUsd,
-                'remaining_syp' => round($remainingUsd * $currentRate, 2),
-            ],
-        ];
-    }*/
     public function getCenterDoctorsSummary(): array
     {
         $totalDueUsd = (float) Doctor_Earning::sum('amount_usd');
@@ -284,41 +226,6 @@ class DoctorFinanceService
             ],
         ];
     }
-
-//     public function getCenterDoctorsSummary(): array
-// {
-//     // حساب الإجماليات مع دمج حساب القيم المفقودة مباشرة في الاستعلام
-//     $totalDueUsd = (float) Doctor_Earning::sum('amount_usd');
-//     $totalPaidUsd = (float) Doctor_Payment::sum('amount_usd');
-
-//     // حساب الـ SYP مباشرة من قاعدة البيانات
-//     // نجمع القيمة الموجودة + القيمة المحسوبة للحقول الفارغة في استعلام واحد
-//     $totalDueSyp = (float) Doctor_Earning::query()
-//         ->leftJoin('exchange_rates', 'doctor_earnings.exchange_rate_id', '=', 'exchange_rates.id')
-//         ->selectRaw('SUM(COALESCE(amount_syp, amount_usd * exchange_rates.rate)) as total')
-//         ->value('total');
-
-//     $totalPaidSyp = (float) Doctor_Payment::query()
-//         ->leftJoin('exchange_rates', 'doctor_payments.exchange_rate_id', '=', 'exchange_rates.id')
-//         ->selectRaw('SUM(COALESCE(amount_syp, amount_usd * exchange_rates.rate)) as total')
-//         ->value('total');
-
-//     $currentRate = (float) $this->exchangeRateService->getCurrentUsdToSypRate()->rate;
-//     $remainingUsd = max($totalDueUsd - $totalPaidUsd, 0);
-
-//     return [
-//         'totals' => [
-//             'due_usd'       => $totalDueUsd,
-//             'due_syp'       => round($totalDueSyp, 2),
-//             'paid_usd'      => $totalPaidUsd,
-//             'paid_syp'      => round($totalPaidSyp, 2),
-//             'remaining_usd' => $remainingUsd,
-//             'remaining_syp' => round($remainingUsd * $currentRate, 2),
-//         ],
-//     ];
-// }
-
-    
 
 
 }

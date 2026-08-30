@@ -38,7 +38,6 @@ class DoctorService
             'success' => false,
             'message' => "هذا المستخدم ليس دكتور"
         ];
-       // throw new \Exception("هذا المستخدم ليس دكتور");
     }
 
     // 🔥 منع التداخل
@@ -55,7 +54,6 @@ class DoctorService
             'success' => false,
             'message' => "الفترة تتداخل مع فترة موجودة"
         ];
-       // throw new \Exception("الفترة تتداخل مع فترة موجودة");
 
     }
     if ($data['start_time'] >= $data['end_time']) {
@@ -63,7 +61,6 @@ class DoctorService
                 'success' => false,
                 'message' => "وقت البداية لازم يكون قبل النهاية"
             ];
-    //throw new \Exception("وقت البداية لازم يكون قبل النهاية");
 }
 
     return Doctor_Schedule::create([
@@ -130,19 +127,6 @@ class DoctorService
     ->get();
 }
 
-    ////////////////////////////////////////////////////
-// public function getDoctorPatients()
-// {
-//     $doctor = Auth::user()->doctor;
-
-//     return Patient::whereHas('treatmentPlans.planItems.sessions', function ($q) use ($doctor) {
-//         $q->where('doctor_id', $doctor->id)
-//           ->where('status', 'completed'); // 🔥 فقط جلسات فعلية
-//     })
-//     ->distinct()
-//     ->get();
-// }
-//عرض مرضى الدكتور
 public function getDoctorPatients()
 {
     $doctorId = Auth::user()->doctor->id;
@@ -170,19 +154,6 @@ public function getDoctorPatients()
     });
 }
 
-// public function getDoctorPatients()
-// {
-//     $doctorId = Auth::user()->doctor->id;
-
-//     return Patient::whereHas('treatmentPlans', function ($planQuery) use ($doctorId) {
-//         $planQuery->where('doctor_id', $doctorId)
-//             ->whereHas('items.sessions', function ($sessionQuery) {
-//                 $sessionQuery->where('status', 'completed');
-//             });
-//     })
-//         ->distinct()
-//         ->get();
-// }
 
 public function getTodayAppointments()
 {
@@ -220,11 +191,7 @@ public function searchPatientsByName(string $name)
         ->whereHas('user', function ($q) use ($name) {
             $q->where('name', 'like', "%{$name}%");
         });
- /*   if ($doctor) {
-        $query->whereHas('treatmentPlans', function ($planQuery) use ($doctor) {
-            $planQuery->where('doctor_id', $doctor->id);
-        });
-    }*/
+
     return $query
         ->distinct()
         ->get()
@@ -237,86 +204,11 @@ public function searchPatientsByName(string $name)
         ->values();
 }
 
-// طلب مواد
-// public function createRequest(array $data)
-// {
-//     return DB::transaction(function () use ($data) {
-//         // $request = MaterialRequest::create([
-//         //     'doctor_id' => Auth::id(),
-//         //     'notes' => $data['notes'] ?? null,
-//         // ]);
-//          $doctor = Doctor::where('user_id', Auth::id())->firstOrFail();
-// // توليد رقم طلب فريد (REQ-XXXX) مع قفل لمنع التضارب عند الطلبات المتزامنة
-// $lastId = MaterialRequest::lockForUpdate()->max('id') ?? 0;
-// $requisitionNumber = 'REQ-' . str_pad((string) ($lastId + 1), 4, '0', STR_PAD_LEFT);
-//         $request = MaterialRequest::create([
-//              'requisition_number' => $requisitionNumber, // ✅ أضيف
-//             'doctor_id' => $doctor->id, // ✅ هون الصح
-//              'requested_by' => Auth::id(),  
-//             'notes' => $data['notes'] ?? null,
-//         ]);
-
-//         foreach ($data['items'] as $item) {
-
-//             MaterialRequestItem::create([
-//                 'material_request_id' => $request->id,
-//                 'item_id' => $item['item_id'],
-//                  'quantity_requested'  => $item['quantity'],
-//             ]);
-//         }
-
-//       $warehouseManagers = User::role('storekeeper')
-//     ->pluck('id')
-//     ->toArray();
-
-//         Log::info('managers ...');
-        
-//         Log::info($warehouseManagers);
-// if (!empty($warehouseManagers)) {
-
-//     foreach ($warehouseManagers as $managerId) {
-
-//         $manager = User::find($managerId);
-
-//         // نتأكد أن المستخدم عنده FCM token
-//         if (!$manager || empty($manager->fcm_token)) {
-//             continue;
-//         }
-
-//         Log::info('notification sending...');
-//         $message = CloudMessage::new()
-//             ->toToken($manager->fcm_token)
-//             ->withNotification(
-//                 Notification::create(
-//                     'notification title',
-//                     'notification body'
-//                 )
-//             )
-//             ->withData([
-//                 'type' => 'test',
-//                 'timestamp' => now()->toDateTimeString(),
-//             ]);
-
-//         // إرسال الإشعار
-//         $this->messaging->send($message);
-//         Log::info('notification sent...');
-//     }
-// }
-
-//  event(new MaterialRequestCreated($request));
-
-
-//         return $request->load('items');
-//     });
-// }
 
 public function createRequest(array $data)
 {
     return DB::transaction(function () use ($data) {
-        // $request = MaterialRequest::create([
-        //     'doctor_id' => Auth::id(),
-        //     'notes' => $data['notes'] ?? null,
-        // ]);
+
          $doctor = Doctor::where('user_id', Auth::id())->firstOrFail();
 // توليد رقم طلب فريد (REQ-XXXX) مع قفل لمنع التضارب عند الطلبات المتزامنة
 $lastId = MaterialRequest::lockForUpdate()->max('id') ?? 0;

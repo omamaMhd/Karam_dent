@@ -122,14 +122,6 @@ class TreatmentSessionService
 
         $appointment = $this->findConfirmedAppointmentForToday($session->planItem);
 
-        /*if (!$appointment) {
-            return [
-                'success' => false,
-                'message' => "لا يوجد موعد مؤكد اليوم لإكمال هذه الجلسة"
-            ];
-            //throw new \DomainException('لا يوجد موعد مؤكد اليوم لإكمال هذه الجلسة');
-        }*/
-
         $session->update([
             'status'         => 'completed',
             'appointment_id' => $appointment?->id,

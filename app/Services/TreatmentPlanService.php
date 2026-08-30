@@ -53,8 +53,6 @@ class TreatmentPlanService
                 'target_teeth'     => $data['target_teeth'] ?? null,
             ]);
 
-          //  $this->syncDoctorEarning($plan);
-
             $invoice = app(\App\Services\InvoiceService::class)
                 ->createPatientInvoice([
                     'patient_id' => $plan->patient_id,
@@ -311,7 +309,6 @@ class TreatmentPlanService
                         'success' => false,
                         'message' => "هذا المستخدم ليس دكتور"
                     ];
-           // throw new \Exception('هذا المستخدم ليس دكتور');
         }
 
         $plan = Treatment_Plan::where('id', $planId)

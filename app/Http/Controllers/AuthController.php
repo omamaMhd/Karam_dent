@@ -29,15 +29,7 @@ public function register(RegisterRequest $request)
             'otp_code'     => 'required|digits:4'
         ]);
 
-        // try {
-        //     $token = $this->service->verifyOtp($request->phone_number, $request->otp_code);
-        //     return response()->json([
-        //         'message' => 'تم تفعيل الحساب بنجاح',
-        //         'token'   => $token
-        //     ]);
-        // } catch (\Exception $e) {
-        //     return response()->json(['error' => $e->getMessage()], 422);
-        // }
+
          $result = $this->service->verifyOtp(
         $request->phone_number,
         $request->otp_code

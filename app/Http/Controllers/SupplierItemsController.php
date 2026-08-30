@@ -12,28 +12,7 @@ class SupplierItemsController extends Controller
     {
         $this->service = $service;
     }
-//    //انشاء مورد  
-//   public function store(Request $request)
-//     {
-//         $data = $request->validate([
-//             'name' => 'required|string',
-//             'phone' => 'nullable|string',
-//             'notes' => 'nullable|string',
 
-//             'items' => 'required|array',
-
-//             'items.*.item_id' => 'nullable|exists:items,id',
-//             'items.*.name' => 'nullable|string',
-//             'items.*.unit' => 'nullable|string',
-//         ]);
-
-//         $supplier = $this->service->createSupplierWithItems($data);
-
-//         return response()->json([
-//             'message' => 'Supplier created successfully',
-//             'data' => $supplier
-//         ]);
-//     }
 
 public function store(Request $request)
 {
@@ -59,42 +38,6 @@ public function store(Request $request)
         'data' => $supplier
     ]);
 }
-
-//  public function store(Request $request)
-//     {
-//         $data = $request->validate([
-//             'name' => 'required|string',
-//             'phone' => 'nullable|string',
-//             'notes' => 'nullable|string',
-
-//             'items' => 'required|array',
-//             'items.*' => 'exists:items,id',
-//         ]);
-
-//         $supplier = $this->service->createSupplierWithItems($data);
-
-//         return response()->json([
-//             'message' => 'Supplier created successfully',
-//             'data' => $supplier
-//         ]);
-//     }
-//تثبيت المواد في النظام
-    //  public function stores(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'name' => 'required|string|max:255',
-    //         'code' => 'required|string|max:50|unique:items,code',
-    //         'unit' => 'required|string|max:50',
-    //         'minimum_stock' => 'required|integer|min:0',
-    //     ]);
-
-    //     $item = $this->service->createItem($data);
-
-    //     return response()->json([
-    //         'message' => 'Item created successfully',
-    //         'data' => $item
-    //     ]);
-    // }
 
     //تثبيت مواد كدفعة وحدة
     public function stores(Request $request)
@@ -128,7 +71,7 @@ public function availableItems()
         'data' => $items
     ]);
 }
-////////
+
 
 public function getAllSuppliers()
 {

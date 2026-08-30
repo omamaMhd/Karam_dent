@@ -26,12 +26,6 @@ class SpecializationController extends Controller
         );
     }
 
-    // public function getDoctor($id)
-    // {
-    //     return response()->json(
-    //         $this->service->getActiveDoctor($id)
-    //     );
-    // } 
     public function getDoctorsBySpecialization($id)
     {
         return response()->json(

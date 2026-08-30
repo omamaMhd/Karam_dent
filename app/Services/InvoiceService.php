@@ -12,8 +12,7 @@ use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
 class InvoiceService
 {
- // protected $messaging;
-//عرض فواتير المورد
+
     public function getAll()
 {
   return Invoice::where('type', 'supplier')
@@ -27,9 +26,7 @@ public function getAllPatientInvoices()
 {
     return Invoice::where('type', 'patient')
         ->with([
-            //'items',        // الجلسات (invoice_items)
             'payments',     // الدفعات
-          // 'patient.user',      // المريض
             'plans'          // الخطة (اختياري)
         ])
         ->orderByDesc('created_at')
@@ -72,7 +69,6 @@ public function payInvoice($invoiceId, $amount , string $idempotencyKey)
         return [
             'message'   => 'Payment already recorded (duplicate request ignored)',
             'data'      => $existing->invoice->load('payments'),
-            //'receipt'   => $existing->receipt_number,
             'duplicate' => true, // فيدك تعرفي بالفرونت إنه هاد رد مكرر مش دفعة جديدة
         ];
     }
@@ -124,7 +120,6 @@ public function payInvoice($invoiceId, $amount , string $idempotencyKey)
             'success' => false,
             'message' => "Invoice already fully paid"
         ];
-      //  throw new \Exception("Invoice already fully paid");
     }
 
     if (($invoice->paid_amount + $amount) > $total) {
@@ -132,7 +127,6 @@ public function payInvoice($invoiceId, $amount , string $idempotencyKey)
             'success' => false,
             'message' => "Payment exceeds remaining amount"
         ];
-        //throw new \Exception("Payment exceeds remaining amount");
     }
     $rate = app(ExchangeRateService::class)->getCurrentUsdToSypRate();
 
@@ -145,14 +139,12 @@ public function payInvoice($invoiceId, $amount , string $idempotencyKey)
         'created_by' => Auth::id(),
     ]);
 
-    // 🔥 تحديث البيانات
     $invoice->refresh();
 
     $invoice->paid_amount = $invoice->payments()->sum('amount');
 
     $this->updateStatus($invoice, $total);
 
-    // 💰 حساب الليرة
     $invoice->total_amount_SYP = $invoice->total_amount_USD * $invoice->exchange_rate;
 
     $invoice->save();
@@ -195,41 +187,31 @@ public function applyDiscount($invoiceId, $discount)
 {
     $invoice = Invoice::findOrFail($invoiceId);
 
-    // ❗ فقط للمورد والمريض
     if (!in_array($invoice->type, ['supplier', 'patient'])) {
             return [
                 'success' => false,
                 'message' => "Discount not allowed for this invoice type"
             ];
-        //throw new \Exception("Discount not allowed for this invoice type");
     }
 
-    // 🧾 خزّن نسبة الخصم
     $invoice->discount = $discount;
 
-    // 💰 القيمة الأصلية
     $totalBefore = $invoice->total_amount_USD;
 
-    // 🧮 حساب الخصم
     $discountValue = ($totalBefore * $discount) / 100;
     $totalAfter = $totalBefore - $discountValue;
- // ✅ 👇 هون بالضبط تحطها
     if ($invoice->paid_amount > $totalAfter) {
             return [
                 'success' => false,
                 'message' => "Discount invalid: paid amount exceeds total after discount"
             ];
-       // throw new \Exception("Discount invalid: paid amount exceeds total after discount");
     }
-    // 💾 التخزين
     $invoice->total_amount_USD_after_discount = $totalAfter;
     $invoice->total_amount_SYP_after_discount = $totalAfter * $invoice->exchange_rate;
 
-    // 🔥 مهم: تحديث الحالة بعد الخصم
     $this->updateStatus($invoice, $totalAfter);
 
     $invoice->save();
-// إضافة حساب المتبقي للريسبونس
     $remaining = $totalAfter - $invoice->paid_amount;
 
     return [
@@ -239,7 +221,6 @@ public function applyDiscount($invoiceId, $discount)
 }
 
 
-//انشاء فاتورة المريض 
 public function createPatientInvoice(array $data)
 {
     return DB::transaction(function () use ($data) {
@@ -248,10 +229,8 @@ public function createPatientInvoice(array $data)
 
         $rate = app(ExchangeRateService::class)->getCurrentUsdToSypRate();
         
-        // لنفترض أنكِ حددتِ سعر الخطة الإجمالي في جدول الخطط أو يأتي من الـ $data
         $totalUsd = $data['total_amount'] ?? $plan->price_usd; 
 
-        // 1. إنشاء الفاتورة
         $invoice = Invoice::create([
             'type' => 'patient',
             'patient_id' => $patient->id,
@@ -274,7 +253,6 @@ public function addSession($invoice, $session)
 {
     $amount = $session->rprice_usd;
 
-    // add item
     $invoice->items()->create([
         'treatment_session_id' => $session->id,
         'description' => $session->name,
@@ -283,7 +261,6 @@ public function addSession($invoice, $session)
         'subtotal' => $amount,
     ]);
 
-    // recalc total
     $this->recalculate($invoice);
 
     return $invoice;
@@ -307,7 +284,6 @@ private function status($invoice)
     return 'paid';
 }
 
-//  للمرضى: إحصائيات شهرية للفواتير حسب الحالة
 public function getMonthlyStatusStats($year = null)
 {
     $year = $year ?? date('Y');
@@ -324,7 +300,6 @@ public function getMonthlyStatusStats($year = null)
         ->get()
         ->keyBy('month'); // ← فهرسة النتائج برقم الشهر عشان نلاقيها بسرعة
 
-    // نبني مصفوفة من 1 لـ 12 ونعبي الفاضي بصفر
     $stats = [];
     for ($month = 1; $month <= 12; $month++) {
         if ($results->has($month)) {
@@ -344,7 +319,7 @@ public function getMonthlyStatusStats($year = null)
 
     return $stats;
 }
-// إحصائيات شهرية للفواتير حسب الحالة للموردين
+
 public function getMonthlySupplierStatusStats($year = null)
 {
     $year = $year ?? date('Y');
@@ -381,7 +356,6 @@ public function getMonthlySupplierStatusStats($year = null)
     return $stats;
 }
 
-// إحصائيات الإيرادات لسنة
 public function getMonthlyRevenueStats($year = null)
 {
     $year = $year ?? date('Y');
@@ -430,7 +404,6 @@ public function sendPaymentReminders()
 
     foreach ($overdueInvoices as $invoice) {
 
-        // لا ترسل إذا تم إرسال تذكير خلال آخر 7 أيام
         if (
             $invoice->last_reminder_sent_at &&
             $invoice->last_reminder_sent_at
@@ -455,14 +428,12 @@ public function sendPaymentReminders()
             ]
         ));
 
-        // تسجيل وقت إرسال التذكير
         $invoice->update([
             'last_reminder_sent_at' => now(),
         ]);
     }
 }
 
-//عرض لفواتير المتأخرة بالدفع
 public function getOverdueInvoices($fromDate = null, $toDate = null)
 {
     $startDate = $fromDate ? Carbon::parse($fromDate) : now()->subMonths(12);
@@ -479,15 +450,10 @@ public function getOverdueInvoices($fromDate = null, $toDate = null)
 
             $progress = $invoice->plans->progress_percent;
             $paid     = $invoice->paid_percent;
-
-            // الحالة 1: الخطة مكتملة 100% والمريض لم يكمل الدفع
             $case1 = ($progress == 100 && $paid < 100);
-
-            // الحالة 2: نسبة الإنجاز أكبر من نسبة الدفع بـ 20% أو أكثر
             $case2 = ($progress > $paid + 20);
 
             return $case1 || $case2;
         });
 }
-
 }

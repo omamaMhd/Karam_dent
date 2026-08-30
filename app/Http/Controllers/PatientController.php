@@ -28,28 +28,7 @@ class PatientController extends Controller
         $this->service->getAvailableSlotsForDays($doctorId)
     );
 }
-// //عرض المواعيد المتاحة لليوم 
-//    public function getAvailableSlotsForDays(Request $request)
-// {
-//     // $data = $request->validate([
-//     //     'specialization_id' => 'required|exists:specializations,id',
-        
-//     // ]);
 
-//     // $result = $this->service->getAvailableSlotsForDays(
-//     //     $data['specialization_id'],
-    
-//     // );
-//       $data = $request->validate([
-//             'doctor_id' => 'required|exists:doctors,id',
-//         ]);
-
-//         return response()->json(
-//             $this->service->getAvailableSlotsForDays($data['doctor_id'])
-//         );
-
-//     //return response()->json($result);
-// }
 // حجز موعد
  public function bookAppointment(Request $request)
 {

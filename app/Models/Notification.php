@@ -11,7 +11,7 @@ class Notification extends Model
     use FixJsonDateFormat;
     protected $table = 'notifications';
       protected $fillable = [
-         'user_id',
+        'user_id',
         'title',
         'body',
         'type',

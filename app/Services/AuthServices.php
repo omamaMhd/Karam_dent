@@ -80,7 +80,6 @@ class AuthServices {
             'otp_expires_at' => null
         ]);
 
-     //   return $user->createToken('auth_token')->plainTextToken;
      return [
         'success' => true,
         'message' => 'تم تفعيل الحساب بنجاح',
@@ -96,7 +95,6 @@ class AuthServices {
             'success' => false,
             'message' => "المستخدم غير موجود"
         ];
-       // throw new Exception("المستخدم غير موجود");
     }
 
     // إذا الحساب متفعل أصلاً
@@ -105,7 +103,6 @@ class AuthServices {
             'success' => false,
             'message' => "الحساب مفعل بالفعل"
         ];
-       // throw new Exception("الحساب مفعل بالفعل");
     }
 
     // (اختياري) منع السبام - إذا الكود لسا ما انتهى
@@ -114,7 +111,6 @@ class AuthServices {
                 'success' => false,
                 'message' => "الكود الحالي ما زال صالح، حاول لاحقاً"
             ];
-       // throw new Exception("الكود الحالي ما زال صالح، حاول لاحقاً");
     }
      
     // توليد كود جديد
@@ -156,7 +152,6 @@ public function login($data)
 
     $actualRole = $user->getRoleNames()->first();
     if (!$actualRole) {
-       // throw new Exception("هذا الحساب لا يملك أي role. راجع إنشاء الحساب أو الإسناد.");
         return [
             'success' => false,
             'message' => 'هذا الحساب لا يملك أي role. راجع إنشاء الحساب أو الإسناد.'
@@ -166,7 +161,6 @@ public function login($data)
     // تحقق تفعيل المريض
     if ($user->hasRole('patient') && !$user->is_verified) 
         {
-        // throw new Exception("يرجى تفعيل الحساب أولاً.");
         return [
             'success' => false,
             'message' => 'يرجى تفعيل الحساب أولاً.'
@@ -180,10 +174,6 @@ public function login($data)
         'success' => false,
         'message' => "هذا الحساب ليس {$role}، الدور الصحيح هو {$actualRole}"    ];
 }
-    //      {
-    //     throw new Exception("هذا الحساب ليس {$role}، الدور الصحيح هو {$actualRole}");
-    // }
-
     // ✅ دخول طبيعي
     $token = $user->createToken('auth_token')->plainTextToken;
 

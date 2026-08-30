@@ -13,13 +13,9 @@ class MaterialRequestItem extends Model
       protected $fillable = [
         'material_request_id',
         'item_id',
-        //'quantity',
         'quantity_requested', 
-        //'quantity_fulfilled', 
         'batch_number_used', 
         'inventory_id'
-        // 'approved_quantity',
-        // 'status'
     ];
 
     // 🔗 الطلب
