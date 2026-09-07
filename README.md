@@ -115,5 +115,7 @@ Configure `.env` with your database, Redis, Firebase (`FIREBASE_CREDENTIALS`, `F
 ## Contributors
 
 - **doaanassan2002**
-- **omamaMhd**
+- **omamaMhd** (Omama Mohamad)
+
+
 
