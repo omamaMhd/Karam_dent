@@ -1,4 +1,4 @@
-# Karam Dent — Dental Clinic Management System
+# Karam Dent — Dental Clinic Management System 🦷
 
 A production-grade **Laravel 11** REST API that runs the full back office of a dental clinic — patients, doctors, appointments, treatment plans, dental charts, invoicing, inventory, payroll, and reporting — behind a role-based, audited, multi-tenant-style permission system.
 
@@ -6,7 +6,7 @@ Built as the backend for a real client (a dental clinic), designed to be consume
 
 ---
 
-## Why this project stands out
+## 🌟 Why this project stands out
 
 This isn't a CRUD demo — it models the real operational and financial logic of running a clinic:
 
@@ -84,7 +84,7 @@ app/
 
 A deliberate **service-layer architecture**: controllers stay thin and simply validate/dispatch, while services own business rules — which is what makes the pricing/booking/finance logic testable and consistent across the ~90 API endpoints in `routes/api.php`.
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -109,7 +109,24 @@ php artisan migrate --seed
 php artisan serve
 ```
 
+## 🔑 Essential Environment Variables (.env)
 Configure `.env` with your database, Redis, Firebase (`FIREBASE_CREDENTIALS`, `FIREBASE_PROJECT_ID`), and Google Drive credentials as needed — see `.env.example` for the full list.
+```bash
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=karam_dent
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+```
+
+# Firebase (for Push Notifications)
+FIREBASE_CREDENTIALS=path/to/firebase-credentials.json
+
+# Google Drive (for Backup/Storage)
+GOOGLE_DRIVE_CLIENT_ID=your_client_id
+GOOGLE_DRIVE_CLIENT_SECRET=your_client_secret
+GOOGLE_DRIVE_REFRESH_TOKEN=your_refresh_token
 
 
 ## Contributors
